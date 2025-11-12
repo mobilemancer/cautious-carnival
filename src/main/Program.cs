@@ -64,17 +64,10 @@ class Program
             AgentRunResponse answer = await logParserAgent.RunAsync(prompt);
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine($"Agent: {answer}");
+
             return Results.Json(new { answer });
         });
 
         app.Run(selfURL);
     }
-
-
-
-}
-
-class PlanRequest
-{
-    public string Prompt { get; set; } = string.Empty;
 }

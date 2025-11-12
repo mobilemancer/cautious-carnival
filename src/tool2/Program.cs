@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace tool2;
 
@@ -7,6 +8,9 @@ class Program
     const string agentName = "data_sanitizer";
     const string selfURL = "http://localhost:5002";
     const string orchestratorUrl = "http://localhost:5000/register";
+
+    private static readonly Regex UserFieldPattern = new(@"\b(?<key>user[\w-]*)(?<delimiter>\s*:\s*)(?<value>[^\r\n\s,;]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex UserTokenPattern = new(@"\buser(?!\s*:)[\w-]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     static void Main(string[] args)
     {
@@ -40,7 +44,13 @@ class Program
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine($"Tool {agentName} called with {req.Text}");
 
-            string sanitized = req.Text.Replace("user123", "[REDACTED]");
+            string sanitized = UserFieldPattern.Replace(req.Text, static match =>
+            {
+                var key = match.Groups["key"].Value;
+                var delimiter = match.Groups["delimiter"].Value;
+                return $"{key}{delimiter}[REDACTED]";
+            });
+            sanitized = UserTokenPattern.Replace(sanitized, "[REDACTED]");
 
             Console.WriteLine($"Tool {agentName} returning {sanitized}");
 
