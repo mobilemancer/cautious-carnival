@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace tool1;
 
@@ -39,7 +41,7 @@ class Program
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine($"Tool {agentName} called");
 
-            string report = $"Executive Summary:\n- {req.Text}\n[Visual asset placeholder]";
+            string report = BuildSummaryReport(req.Text);
 
             Console.WriteLine($"Tool {agentName} returning {report}");
 
@@ -48,5 +50,59 @@ class Program
 
         app.Run(selfURL);
 
+    }
+
+    private static string BuildSummaryReport(string raw)
+    {
+        var lines = raw.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+        var severityCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var exceptions = new List<string>();
+        string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            var dateToken = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            if (DateTime.TryParse(dateToken, out var parsedDate))
+            {
+                currentDate = parsedDate.ToString("yyyy-MM-dd");
+            }
+
+            var severityMatch = Regex.Match(trimmed, "\\[(?<severity>[A-Z]+)\\]");
+            if (severityMatch.Success)
+            {
+                var severity = severityMatch.Groups["severity"].Value;
+                severityCounts.TryGetValue(severity, out var count);
+                severityCounts[severity] = count + 1;
+            }
+
+            if (trimmed.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("exception", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("failed", StringComparison.OrdinalIgnoreCase))
+            {
+                exceptions.Add(trimmed);
+            }
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("| Date | Severity Counts | Outstanding Exceptions |");
+        sb.AppendLine("| --- | --- | --- |");
+
+        var countsSummary = severityCounts.Count == 0
+            ? "None"
+            : string.Join(", ", severityCounts.Select(kv => $"{kv.Key}: {kv.Value}"));
+
+        var exceptionSummary = exceptions.Count == 0
+            ? "None"
+            : string.Join("<br>", exceptions);
+
+        sb.AppendLine($"| {currentDate} | {countsSummary} | {exceptionSummary} |");
+
+        return sb.ToString();
     }
 }

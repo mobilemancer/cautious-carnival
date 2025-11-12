@@ -30,5 +30,5 @@ POST http://localhost:5000/plan-and-run
 Content-Type: application/json
 
 {
-    "prompt": "Generate a project intelligence brief: analyze system logs for errors, sanitize data, and produce a summary report."
+    "prompt": "Generate a project intelligence brief: analyze system logs for errors, sanitize data, and produce a summary report with the report generator."
 }
