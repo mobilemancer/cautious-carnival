@@ -57,6 +57,7 @@ class Program
         var lines = raw.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
         var severityCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var exceptions = new List<string>();
+        var severityExceptions = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
         foreach (var line in lines)
@@ -74,9 +75,11 @@ class Program
             }
 
             var severityMatch = Regex.Match(trimmed, "\\[(?<severity>[A-Z]+)\\]");
+            string? lineSeverity = null;
             if (severityMatch.Success)
             {
-                var severity = severityMatch.Groups["severity"].Value;
+                lineSeverity = severityMatch.Groups["severity"].Value.ToUpperInvariant();
+                var severity = lineSeverity;
                 severityCounts.TryGetValue(severity, out var count);
                 severityCounts[severity] = count + 1;
             }
@@ -86,22 +89,54 @@ class Program
                 trimmed.Contains("failed", StringComparison.OrdinalIgnoreCase))
             {
                 exceptions.Add(trimmed);
+                if (!string.IsNullOrEmpty(lineSeverity))
+                {
+                    if (!severityExceptions.TryGetValue(lineSeverity, out var list))
+                    {
+                        list = new List<string>();
+                        severityExceptions[lineSeverity] = list;
+                    }
+                    list.Add(trimmed);
+                }
             }
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine("| Date | Severity Counts | Outstanding Exceptions |");
-        sb.AppendLine("| --- | --- | --- |");
+        sb.AppendLine("| Date | Severity | Count | Outstanding Exceptions |");
+        sb.AppendLine("| --- | --- | --- | --- |");
 
-        var countsSummary = severityCounts.Count == 0
-            ? "None"
-            : string.Join(", ", severityCounts.Select(kv => $"{kv.Key}: {kv.Value}"));
+        if (severityCounts.Count == 0)
+        {
+            var exceptionSummary = exceptions.Count == 0 ? "None" : string.Join("<br>", exceptions);
+            sb.AppendLine($"| {currentDate} | None | 0 | {exceptionSummary} |");
+            return sb.ToString();
+        }
 
-        var exceptionSummary = exceptions.Count == 0
-            ? "None"
-            : string.Join("<br>", exceptions);
+        var orderedSeverities = severityCounts.Keys
+            .OrderBy(severity => severity switch
+            {
+                "CRITICAL" => 0,
+                "FATAL" => 1,
+                "ERROR" => 2,
+                "WARN" => 3,
+                "WARNING" => 4,
+                "INFO" => 5,
+                "DEBUG" => 6,
+                "TRACE" => 7,
+                _ => 8
+            })
+            .ThenBy(severity => severity, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        sb.AppendLine($"| {currentDate} | {countsSummary} | {exceptionSummary} |");
+        foreach (var severity in orderedSeverities)
+        {
+            var count = severityCounts[severity];
+            var exceptionSummary = severityExceptions.TryGetValue(severity, out var scopedExceptions) && scopedExceptions.Count > 0
+                ? string.Join("<br>", scopedExceptions)
+                : "None";
+
+            sb.AppendLine($"| {currentDate} | {severity.ToUpperInvariant()} | {count} | {exceptionSummary} |");
+        }
 
         return sb.ToString();
     }

@@ -15,7 +15,40 @@ This also means that choosing the next tool in the right order is up to the Agen
 ### Architecture Diagram
 
 ```mermaid
+flowchart TD
+    classDef service fill:#f0f8ff,stroke:#1f78c1,stroke-width:2px
+    classDef endpoint fill:#fff3cd,stroke:#e0a800,stroke-width:1.5px
+    classDef tool fill:#e8f5e9,stroke:#2e7d32,stroke-width:1.5px
+    classDef metadata fill:#ede7f6,stroke:#5e35b1,stroke-width:1.5px,stroke-dasharray:4 2
 
+    MainService[Main service]:::service
+    AgentCore[Active main agent]:::service
+    BaseTool[Base log reader tool]:::tool
+    RegisterEndpoint[POST /register endpoint]:::endpoint
+    RunEndpoint[POST /run endpoint]:::endpoint
+    Metadata[AgentTool description store]:::metadata
+
+    subgraph Tool Projects
+        Tool1[Tool project 1]:::tool
+        Tool2[Tool project 2]:::tool
+        Tool3[Tool project 3]:::tool
+    end
+
+    MainService -->|hosts current agent| AgentCore
+    AgentCore --> BaseTool
+    Tool1 --> RegisterEndpoint
+    Tool2 --> RegisterEndpoint
+    Tool3 --> RegisterEndpoint
+    RegisterEndpoint -->|store tool definition| Metadata
+    Metadata -->|trigger agent refresh| MainService
+    Metadata -->|provide tool catalog| AgentCore
+    MainService -->|recreate with latest tools| AgentCore
+    RunEndpoint -->|invoke agent| AgentCore
+
+    AgentCore -->|selects next tool| Tool1
+    AgentCore -->|selects next tool| Tool2
+    AgentCore -->|selects next tool| BaseTool
+    AgentCore -->|selects next tool| Tool3
 ```
 
 ## Orchestration Flow and Communication Strategy
