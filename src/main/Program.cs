@@ -15,14 +15,13 @@ class Program
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("Main orchestrator started");
 
-        var builder = WebApplication.CreateBuilder(args); // This requires .NET 6+ and Microsoft.AspNetCore.App
+        var builder = WebApplication.CreateBuilder(args);
 
         var app = builder.Build();
 
         var agents = new Dictionary<string, AgentRegistration>();
         var tools = new ConcurrentDictionary<string, AITool>();
-        tools.AddOrUpdate("get_logs", AIFunctionFactory.Create(Tools.GetLogsFunction),
-            (key, oldValue) => AIFunctionFactory.Create(Tools.GetLogsFunction));
+        tools.TryAdd("get_logs", AIFunctionFactory.Create(Tools.GetLogsFunction));
 
         string endpoint =
             Environment.GetEnvironmentVariable("talks-autonomous-agents-foundry-uri")
