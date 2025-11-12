@@ -9,8 +9,8 @@ class Program
     const string selfURL = "http://localhost:5002";
     const string orchestratorUrl = "http://localhost:5000/register";
 
-    private static readonly Regex UserFieldPattern = new(@"\b(?<key>user[\w-]*)(?<delimiter>\s*:\s*)(?<value>[^\r\n\s,;]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex UserTokenPattern = new(@"\buser(?!\s*:)[\w-]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex UserFieldPattern = new(@"\b(?<key>user[\w.-]*)(?<separator>\s*[:=]\s*)(?:(?<quote>[""'])(?<value>[^""']*)(?:\k<quote>)|(?<value>\S+))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex StandaloneUserTokenPattern = new(@"\buser(?=\S)(?!\s*[:=])[\w.-]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     static void Main(string[] args)
     {
@@ -47,23 +47,18 @@ class Program
             string sanitized = UserFieldPattern.Replace(req.Text, static match =>
             {
                 var key = match.Groups["key"].Value;
-                var delimiter = match.Groups["delimiter"].Value;
-                return $"{key}{delimiter}[REDACTED]";
-            });
-            var fieldSanitized = sanitized;
-            sanitized = UserTokenPattern.Replace(fieldSanitized, match =>
-            {
-                var index = match.Index + match.Length;
+                var separator = match.Groups["separator"].Value;
 
-                while (index < fieldSanitized.Length && char.IsWhiteSpace(fieldSanitized[index]))
+                if (match.Groups["quote"].Success)
                 {
-                    index++;
+                    var quote = match.Groups["quote"].Value;
+                    return $"{key}{separator}{quote}[REDACTED]{quote}";
                 }
 
-                return index < fieldSanitized.Length && fieldSanitized[index] == ':'
-                    ? match.Value
-                    : "[REDACTED]";
+                return $"{key}{separator}[REDACTED]";
             });
+
+            sanitized = StandaloneUserTokenPattern.Replace(sanitized, "[REDACTED]");
 
             Console.WriteLine($"Tool {agentName} returning {sanitized}");
 
