@@ -26,7 +26,10 @@ class Program
                     {
                         Name = "generate_report",
                         Description = "Summarizes log analysis results into report.",
-                        InputFormat = "text"
+                        InputFormat = "text",
+                        ParameterName = "payload",
+                        ParameterDescription = "Log analysis findings to include in the final report.",
+                        CallbackUrl = selfURL
                     }
                 }
             });

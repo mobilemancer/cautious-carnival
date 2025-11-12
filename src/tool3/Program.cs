@@ -27,7 +27,10 @@ class Program
                     {
                         Name = "analyze_logs",
                         Description = "Analyzes sanitized logs for errors.",
-                        InputFormat = "text"
+                        InputFormat = "text",
+                        ParameterName = "payload",
+                        ParameterDescription = "Sanitized log data to inspect for anomalies and issues.",
+                        CallbackUrl = selfURL
                     }
                 }
             });

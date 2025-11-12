@@ -26,7 +26,10 @@ class Program
                     {
                         Name = "sanitize",
                         Description = "Removes sensitive info from text.",
-                        InputFormat = "text"
+                        InputFormat = "text",
+                        ParameterName = "payload",
+                        ParameterDescription = "Raw log content requiring sanitization before sharing.",
+                        CallbackUrl = selfURL
                     }
                 }
             });

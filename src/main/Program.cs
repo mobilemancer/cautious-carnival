@@ -1,13 +1,19 @@
-﻿using Microsoft.Agents.AI;
+﻿using Azure.AI.OpenAI;
+using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Mvc;
-using Azure.AI.OpenAI;
+using Microsoft.Extensions.AI;
 using OpenAI;
+using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace main;
 
 class Program
 {
     private const string selfURL = "http://localhost:5000";
+    private static readonly HttpClient sharedHttpClient = new();
 
     static void Main(string[] args)
     {
@@ -19,6 +25,8 @@ class Program
         var app = builder.Build();
 
         var agents = new Dictionary<string, AgentRegistration>();
+        var tools = new ConcurrentDictionary<string, AITool>();
+        tools.AddOrUpdate("get_logs", AIFunctionFactory.Create(GetLogsFunction), (key, oldValue) => AIFunctionFactory.Create(GetLogsFunction));
 
         string endpoint =
             Environment.GetEnvironmentVariable("talks-autonomous-agents-foundry-uri")
@@ -35,19 +43,29 @@ class Program
             .GetChatClient("gpt-4.1") //chose your model
             .CreateAIAgent(
                 name: "Log parser",
-                instructions: @"You help the user parse logs.
-                Use your tools. 
-                Sanitize logs before analyzing them.
-                Analyze the logs before making a report."
+                instructions: @"You are a helpful agent.
+                Use your tools.",
+                //Sanitize logs before analyzing them.
+                //Analyze the logs before making a report.",
+                tools: tools.Values.ToList()
             );
-
-        // var response = await logParserAgent.RunAsync("Tell me a joke about programmers.");
 
         app.MapPost("/register", ([FromBody] AgentRegistration agent) =>
         {
             agents[agent.Name] = agent;
+
+            if (agent.Tools?.Any() == true)
+            {
+                foreach (var toolDefinition in agent.Tools)
+                {
+                    var tool = CreateHttpCallbackTool(agent, toolDefinition);
+                    tools.AddOrUpdate(tool.Name, tool, (key, oldValue) => tool);
+
+                }
+            }
+
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"[MCP] Registered agent: {agent.Name} @ {agent.Endpoint}");
+            Console.WriteLine($"[MCP] Registered tool: {agent.Name} @ {agent.Endpoint}");
             return Results.Ok();
         });
 
@@ -58,44 +76,166 @@ class Program
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.WriteLine($"[MAIN] Received request: {prompt}");
 
-            // --- Simple Planner ---
-            var plan = new List<string>();
-            if (prompt.Contains("sanitize", StringComparison.OrdinalIgnoreCase))
-                plan.Add("data_sanitizer");
-            if (prompt.Contains("analyze", StringComparison.OrdinalIgnoreCase))
-                plan.Add("log_analyzer");
-            if (prompt.Contains("report", StringComparison.OrdinalIgnoreCase) ||
-                prompt.Contains("summary", StringComparison.OrdinalIgnoreCase))
-                plan.Add("report_generator");
-
-            var results = new Dictionary<string, TaskResponse>();
-            var http = new HttpClient();
-
-            var currentData = new TaskRequest { Text = "Raw log data from user123: error at module X" };
-
-            Console.WriteLine(await logParserAgent.RunAsync($"prompt: {prompt}, data: {currentData}"));
-
-
-            foreach (var agentName in plan)
-            {
-                var agent = agents[agentName];
-                var response = await http.PostAsJsonAsync($"{agent.Endpoint}/task", currentData);
-                var result = await response.Content.ReadFromJsonAsync<TaskResponse>();
-                results[agentName] = result!;
-                currentData = new TaskRequest { Text = result!.Result };
-            }
-
-            Console.WriteLine(await logParserAgent.RunAsync(prompt));
-
-            var summary = string.Join("\n", results.Select(r => $"{r.Key}: {r.Value.Notes}"));
-            return Results.Json(new { summary, results });
+            AgentRunResponse answer = await logParserAgent.RunAsync(prompt);
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine($"Agent: {answer}");
+            return Results.Json(new { answer });
         });
 
         app.Run(selfURL);
+    }
+
+    private static string GetLogsFunction()
+    {
+        return "Raw log data from user123: error at module X";
+    }
+
+    private static AIFunction CreateHttpCallbackTool(AgentRegistration agent, AgentTool toolDefinition)
+    {
+        var toolName = string.IsNullOrWhiteSpace(toolDefinition.Name) ? agent.Name : toolDefinition.Name;
+        var description = string.IsNullOrWhiteSpace(toolDefinition.Description)
+            ? $"HTTP callback tool for {agent.Name}."
+            : toolDefinition.Description;
+
+        var parameterName = string.IsNullOrWhiteSpace(toolDefinition.ParameterName)
+            ? "payload"
+            : toolDefinition.ParameterName!;
+
+        var parameterDescription = string.IsNullOrWhiteSpace(toolDefinition.ParameterDescription)
+            ? "Task payload forwarded to the registered tool."
+            : toolDefinition.ParameterDescription!;
+
+        var callbackTarget = string.IsNullOrWhiteSpace(toolDefinition.CallbackUrl)
+            ? agent.Endpoint
+            : toolDefinition.CallbackUrl!;
+
+        var callbackUri = NormalizeCallbackUri(callbackTarget);
+
+        var options = new AIFunctionFactoryOptions
+        {
+            Name = toolName,
+            Description = description,
+            ConfigureParameterBinding = parameterInfo =>
+            {
+                if (parameterInfo.ParameterType == typeof(TaskRequest))
+                {
+                    return new AIFunctionFactoryOptions.ParameterBindingOptions
+                    {
+                        BindParameter = (_, args) => ExtractTaskRequest(args, parameterName, parameterInfo.Name ?? parameterName)
+                    };
+                }
+
+                if (parameterInfo.ParameterType == typeof(CancellationToken))
+                {
+                    return new AIFunctionFactoryOptions.ParameterBindingOptions
+                    {
+                        ExcludeFromSchema = true
+                    };
+                }
+
+                return default;
+            },
+            JsonSchemaCreateOptions = new AIJsonSchemaCreateOptions
+            {
+                IncludeParameter = parameterInfo => parameterInfo.ParameterType != typeof(CancellationToken),
+                TransformSchemaNode = (context, schema) =>
+                {
+                    if (context.TypeInfo?.Type == typeof(TaskRequest) && schema is JsonObject parameterSchema)
+                    {
+                        parameterSchema["description"] = parameterDescription;
+                    }
+
+                    return schema;
+                }
+            }
+        };
+
+        var function = AIFunctionFactory.Create(
+            async (TaskRequest payload, CancellationToken cancellationToken) =>
+            {
+                using var response = await sharedHttpClient.PostAsJsonAsync(callbackUri, payload, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                var result = await response.Content.ReadFromJsonAsync<TaskResponse>(cancellationToken: cancellationToken);
+                return result ?? new TaskResponse();
+            },
+            options);
+
+        TypeDescriptor.AddAttributes(function, new DescriptionAttribute(description));
+
+        if (function.UnderlyingMethod is { } methodInfo)
+        {
+            foreach (var parameter in methodInfo.GetParameters().Where(p => p.ParameterType == typeof(TaskRequest)))
+            {
+                TypeDescriptor.AddAttributes(parameter, new DescriptionAttribute(parameterDescription));
+            }
+        }
+
+        return function;
+    }
+
+    private static string NormalizeCallbackUri(string callbackTarget)
+    {
+        if (string.IsNullOrWhiteSpace(callbackTarget))
+            throw new InvalidOperationException("Callback URL cannot be empty.");
+
+        var trimmed = callbackTarget.TrimEnd('/');
+        return trimmed.EndsWith("/task", StringComparison.OrdinalIgnoreCase) ? trimmed : $"{trimmed}/task";
+    }
+
+    private static TaskRequest ExtractTaskRequest(AIFunctionArguments arguments, string desiredName, string fallbackName)
+    {
+        if (TryReadTaskRequest(arguments, desiredName, out var request))
+            return request;
+
+        if (!string.Equals(desiredName, fallbackName, StringComparison.OrdinalIgnoreCase) &&
+            TryReadTaskRequest(arguments, fallbackName, out request))
+            return request;
+
+        foreach (var key in arguments.Keys)
+        {
+            if (TryReadTaskRequest(arguments, key, out request))
+                return request;
+        }
+
+        return new TaskRequest();
+    }
+
+    private static bool TryReadTaskRequest(AIFunctionArguments arguments, string key, out TaskRequest request)
+    {
+        request = new TaskRequest();
+
+        if (!arguments.TryGetValue(key, out var raw) || raw is null)
+            return false;
+
+        request = ConvertToTaskRequest(raw);
+        return true;
+    }
+
+    private static TaskRequest ConvertToTaskRequest(object raw)
+    {
+        return raw switch
+        {
+            TaskRequest request => request,
+            TaskResponse response => new TaskRequest { Text = response.Result },
+            JsonElement jsonElement => jsonElement.ValueKind switch
+            {
+                JsonValueKind.Object => jsonElement.Deserialize<TaskRequest>() ?? new TaskRequest(),
+                JsonValueKind.Null => new TaskRequest(),
+                _ => new TaskRequest { Text = jsonElement.ToString() ?? string.Empty }
+            },
+            JsonNode node => node switch
+            {
+                JsonObject jsonObject => jsonObject.Deserialize<TaskRequest>() ?? new TaskRequest(),
+                JsonValue jsonValue => new TaskRequest { Text = jsonValue.ToString() ?? string.Empty },
+                _ => new TaskRequest { Text = node.ToJsonString() }
+            },
+            string text => new TaskRequest { Text = text },
+            _ => JsonSerializer.Deserialize<TaskRequest>(JsonSerializer.Serialize(raw)) ?? new TaskRequest()
+        };
     }
 }
 
 class PlanRequest
 {
-    public string Prompt { get; set; }
+    public string Prompt { get; set; } = string.Empty;
 }
