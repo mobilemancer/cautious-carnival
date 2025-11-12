@@ -5,29 +5,29 @@ namespace tool2;
 class Program
 {
     const string agentName = "data_sanitizer";
-    const string selfURL = "http://localhost:5003";
+    const string selfURL = "http://localhost:5002";
     const string orchestratorUrl = "http://localhost:5000/register";
 
     static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         var app = builder.Build();
+        HttpClient http = new();
 
         app.Lifetime.ApplicationStarted.Register(async () =>
         {
-            var http = new HttpClient();
             await http.PostAsJsonAsync(orchestratorUrl, new AgentRegistration
             {
                 Name = agentName,
                 Endpoint = $"{selfURL}",
                 Tools = new()
                 {
-            new AgentTool
-            {
-                Name = "sanitize",
-                Description = "Removes sensitive info from text.",
-                InputFormat = "text"
-            }
+                    new AgentTool
+                    {
+                        Name = "sanitize",
+                        Description = "Removes sensitive info from text.",
+                        InputFormat = "text"
+                    }
                 }
             });
         });

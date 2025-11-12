@@ -5,7 +5,7 @@ namespace tool3;
 class Program
 {
     const string agentName = "log_analyzer";
-    const string selfURL = "http://localhost:5002";
+    private const string selfURL = "http://localhost:5003";
     const string orchestratorUrl = "http://localhost:5000/register";
     const string sanitizerUrl = "http://localhost:5003";
 
@@ -13,29 +13,28 @@ class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var app = builder.Build();
+        HttpClient http = new();
 
-        app.Lifetime.ApplicationStarted.Register(async () =>
+        app.Lifetime.ApplicationStarted.Register((Action)(async () =>
         {
-            var http = new HttpClient();
-            await http.PostAsJsonAsync(orchestratorUrl, new AgentRegistration
+            await HttpClientJsonExtensions.PostAsJsonAsync<AgentRegistration>(http, orchestratorUrl, new AgentRegistration
             {
                 Name = agentName,
                 Endpoint = $"{selfURL}",
                 Tools = new()
                 {
-            new AgentTool
-            {
-                Name = "analyze_logs",
-                Description = "Analyzes sanitized logs for errors.",
-                InputFormat = "text"
-            }
+                    new AgentTool
+                    {
+                        Name = "analyze_logs",
+                        Description = "Analyzes sanitized logs for errors.",
+                        InputFormat = "text"
+                    }
                 }
             });
-        });
+        }));
 
         app.MapPost("/task", async ([FromBody] TaskRequest req) =>
         {
-            var http = new HttpClient();
             // Ensure sanitization before analysis
             var sanitizeResp = await http.PostAsJsonAsync($"{sanitizerUrl}/task", req);
             var sanitized = await sanitizeResp.Content.ReadFromJsonAsync<TaskResponse>();
@@ -45,6 +44,6 @@ class Program
             return new TaskResponse { Result = result, Notes = notes };
         });
 
-        app.Run();
+        app.Run(selfURL);
     }
 }
