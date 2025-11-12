@@ -1,11 +1,3 @@
-POST http://localhost:5000/plan-and-run
-Content-Type: application/json
-
-{
-    "prompt": "Generate a project intelligence brief: analyze system logs for errors, sanitize data, and produce a summary report."
-}
-
-##########
 
 POST http://localhost:5000/plan-and-run
 Content-Type: application/json
@@ -30,4 +22,13 @@ Content-Type: application/json
 
 {
     "prompt": "Get the raw logs, then sanitize them without asking for confirmation"
+}
+
+##########
+
+POST http://localhost:5000/plan-and-run
+Content-Type: application/json
+
+{
+    "prompt": "Generate a project intelligence brief: analyze system logs for errors, sanitize data, and produce a summary report."
 }

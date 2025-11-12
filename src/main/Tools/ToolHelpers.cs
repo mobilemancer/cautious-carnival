@@ -70,7 +70,7 @@ internal class ToolHelpers
         var function = AIFunctionFactory.Create(
             async (TaskRequest payload, CancellationToken cancellationToken) =>
             {
-                Console.WriteLine($"Invoking tool '{toolName}' via HTTP callback to '{callbackUri}', payload: {payload}");
+                Console.WriteLine($"Invoking tool '{toolName}' via HTTP callback to '{callbackUri}', payload: {payload.Text}");
                 using var response = await sharedHttpClient.PostAsJsonAsync(callbackUri, payload, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 var result = await response.Content.ReadFromJsonAsync<TaskResponse>(cancellationToken: cancellationToken);

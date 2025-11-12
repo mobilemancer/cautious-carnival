@@ -19,7 +19,7 @@ class Program
 
         var app = builder.Build();
 
-        var agents = new Dictionary<string, AgentRegistration>();
+        var agents = new ConcurrentDictionary<string, AgentRegistration>();
         var tools = new ConcurrentDictionary<string, AITool>();
         tools.TryAdd("get_logs", AIFunctionFactory.Create(Tools.GetLogsFunction));
 
@@ -64,7 +64,16 @@ class Program
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine($"Agent: {answer}");
 
-            return Results.Json(new { answer });
+            // var firstMessage = answer.Messages?.FirstOrDefault();
+            // if (firstMessage is null)
+            // {
+            //     firstMessage = "Empty response";
+            // }
+
+            // return Results.Text(firstMessage is null ?? "Empty response" : firstMessage);
+
+            // return Results.Json(new { answer });
+            return Results.Text(answer.ToString());
         });
 
         app.Run(selfURL);
