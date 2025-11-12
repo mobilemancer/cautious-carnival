@@ -12,7 +12,7 @@ internal class Agents
         return new AzureOpenAIClient(
                 new Uri(endpoint),
                 new System.ClientModel.ApiKeyCredential(apiKey))
-            .GetChatClient("gpt-4.1")
+            .GetChatClient("gpt-4o") //gpt-4.1, gpt-5-mini
             .CreateAIAgent(
                 name: "Log parser",
                 instructions: @"You are a helpful agent.

@@ -50,7 +50,20 @@ class Program
                 var delimiter = match.Groups["delimiter"].Value;
                 return $"{key}{delimiter}[REDACTED]";
             });
-            sanitized = UserTokenPattern.Replace(sanitized, "[REDACTED]");
+            var fieldSanitized = sanitized;
+            sanitized = UserTokenPattern.Replace(fieldSanitized, match =>
+            {
+                var index = match.Index + match.Length;
+
+                while (index < fieldSanitized.Length && char.IsWhiteSpace(fieldSanitized[index]))
+                {
+                    index++;
+                }
+
+                return index < fieldSanitized.Length && fieldSanitized[index] == ':'
+                    ? match.Value
+                    : "[REDACTED]";
+            });
 
             Console.WriteLine($"Tool {agentName} returning {sanitized}");
 

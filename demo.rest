@@ -20,7 +20,7 @@ POST http://localhost:5000/plan-and-run
 Content-Type: application/json
 
 {
-    "prompt": "Show the raw logs"
+    "prompt": "Show the raw logs, all the logs"
 }
 
 ##########
