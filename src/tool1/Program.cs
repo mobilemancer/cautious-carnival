@@ -7,7 +7,6 @@ class Program
     const string agentName = "report_generator";
     const string selfURL = "http://localhost:5001";
     const string orchestratorUrl = "http://localhost:5000/register";
-    const string analyzerUrl = "http://localhost:5006";
     static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -37,10 +36,13 @@ class Program
 
         app.MapPost("/task", async ([FromBody] TaskRequest req) =>
         {
-            var analysisResp = await http.PostAsJsonAsync($"{analyzerUrl}/task", req);
-            var analysis = await analysisResp.Content.ReadFromJsonAsync<TaskResponse>();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"Tool {agentName} called");
 
-            string report = $"Executive Summary:\n- {analysis!.Notes}\n[Visual asset placeholder]";
+            string report = $"Executive Summary:\n- {req.Text}\n[Visual asset placeholder]";
+
+            Console.WriteLine($"Tool {agentName} returning {report}");
+
             return new TaskResponse { Result = report, Notes = "Generated report and visual asset." };
         });
 

@@ -37,7 +37,13 @@ class Program
 
         app.MapPost("/task", ([FromBody] TaskRequest req) =>
         {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"Tool {agentName} called with {req.Text}");
+
             string sanitized = req.Text.Replace("user123", "[REDACTED]");
+
+            Console.WriteLine($"Tool {agentName} returning {sanitized}");
+
             return new TaskResponse { Result = sanitized, Notes = "Sanitized identifiers." };
         });
 

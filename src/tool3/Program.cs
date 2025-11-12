@@ -38,13 +38,14 @@ class Program
 
         app.MapPost("/task", async ([FromBody] TaskRequest req) =>
         {
-            // Ensure sanitization before analysis
-            var sanitizeResp = await http.PostAsJsonAsync($"{sanitizerUrl}/task", req);
-            var sanitized = await sanitizeResp.Content.ReadFromJsonAsync<TaskResponse>();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"Tool {agentName} called");
 
-            string result = sanitized!.Result;
             string notes = "Found 2 warnings, 1 critical error.";
-            return new TaskResponse { Result = result, Notes = notes };
+
+            Console.WriteLine($"Tool {agentName} returning {notes}");
+
+            return new TaskResponse { Notes = notes };
         });
 
         app.Run(selfURL);

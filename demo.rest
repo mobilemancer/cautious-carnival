@@ -13,3 +13,21 @@ Content-Type: application/json
 {
     "prompt": "List your registered tools"
 }
+
+##########
+
+POST http://localhost:5000/plan-and-run
+Content-Type: application/json
+
+{
+    "prompt": "Show the raw logs"
+}
+
+##########
+
+POST http://localhost:5000/plan-and-run
+Content-Type: application/json
+
+{
+    "prompt": "Get the raw logs, then sanitize them"
+}
