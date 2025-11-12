@@ -54,7 +54,7 @@ class Program
         });
 
 
-        app.MapPost("/plan-and-run", async ([FromBody] PlanRequest request) =>
+        app.MapPost("/run", async ([FromBody] PlanRequest request) =>
         {
             string prompt = request.Prompt;
             Console.ForegroundColor = ConsoleColor.DarkCyan;
