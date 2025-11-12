@@ -29,5 +29,5 @@ POST http://localhost:5000/plan-and-run
 Content-Type: application/json
 
 {
-    "prompt": "Get the raw logs, then sanitize them"
+    "prompt": "Get the raw logs, then sanitize them without asking for confirmation"
 }

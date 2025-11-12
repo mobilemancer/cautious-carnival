@@ -5,6 +5,8 @@ using Microsoft.Extensions.AI;
 
 internal class ToolHelpers
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     internal static AIFunction CreateHttpCallbackTool(AgentRegistration agent, AgentTool toolDefinition, HttpClient sharedHttpClient)
     {
         var toolName = string.IsNullOrWhiteSpace(toolDefinition.Name) ? agent.Name : toolDefinition.Name;
@@ -68,6 +70,7 @@ internal class ToolHelpers
         var function = AIFunctionFactory.Create(
             async (TaskRequest payload, CancellationToken cancellationToken) =>
             {
+                Console.WriteLine($"Invoking tool '{toolName}' via HTTP callback to '{callbackUri}', payload: {payload}");
                 using var response = await sharedHttpClient.PostAsJsonAsync(callbackUri, payload, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 var result = await response.Content.ReadFromJsonAsync<TaskResponse>(cancellationToken: cancellationToken);
@@ -134,18 +137,18 @@ internal class ToolHelpers
             TaskResponse response => new TaskRequest { Text = response.Result },
             JsonElement jsonElement => jsonElement.ValueKind switch
             {
-                JsonValueKind.Object => jsonElement.Deserialize<TaskRequest>() ?? new TaskRequest(),
+                JsonValueKind.Object => jsonElement.Deserialize<TaskRequest>(JsonOptions) ?? new TaskRequest(),
                 JsonValueKind.Null => new TaskRequest(),
                 _ => new TaskRequest { Text = jsonElement.ToString() ?? string.Empty }
             },
             JsonNode node => node switch
             {
-                JsonObject jsonObject => jsonObject.Deserialize<TaskRequest>() ?? new TaskRequest(),
+                JsonObject jsonObject => jsonObject.Deserialize<TaskRequest>(JsonOptions) ?? new TaskRequest(),
                 JsonValue jsonValue => new TaskRequest { Text = jsonValue.ToString() ?? string.Empty },
                 _ => new TaskRequest { Text = node.ToJsonString() }
             },
             string text => new TaskRequest { Text = text },
-            _ => JsonSerializer.Deserialize<TaskRequest>(JsonSerializer.Serialize(raw)) ?? new TaskRequest()
+            _ => JsonSerializer.Deserialize<TaskRequest>(JsonSerializer.Serialize(raw), JsonOptions) ?? new TaskRequest()
         };
     }
 
