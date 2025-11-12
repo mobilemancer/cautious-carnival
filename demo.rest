@@ -1,0 +1,34 @@
+
+POST http://localhost:5000/run
+Content-Type: application/json
+
+{
+    "prompt": "List your registered tools"
+}
+
+##########
+
+POST http://localhost:5000/run
+Content-Type: application/json
+
+{
+    "prompt": "Show the raw logs, all the logs"
+}
+
+##########
+
+POST http://localhost:5000/run
+Content-Type: application/json
+
+{
+    "prompt": "Get the raw logs, then sanitize and show them to me, without asking for confirmation"
+}
+
+##########
+
+POST http://localhost:5000/run
+Content-Type: application/json
+
+{
+    "prompt": "Generate a project intelligence brief: analyze system logs for errors, sanitize data, and produce a summary report with the report generator."
+}
