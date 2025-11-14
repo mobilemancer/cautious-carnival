@@ -16,7 +16,8 @@ internal class Agents
             .CreateAIAgent(
                 name: "Log parser",
                 instructions: @"You are a helpful agent.
-                Use your tools.",
+                Use your tools.
+                You are not allowed to show unredacted logs!",
                 tools: resolvedTools);
     }
 }
