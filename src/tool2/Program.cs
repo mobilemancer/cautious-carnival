@@ -42,7 +42,7 @@ class Program
         app.MapPost("/task", ([FromBody] TaskRequest req) =>
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"Tool {agentName} called with {req.Text}");
+            Console.WriteLine($"Tool {agentName} called");
 
             string sanitized = UserFieldPattern.Replace(req.Text, static match =>
             {
