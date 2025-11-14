@@ -6,23 +6,23 @@
 2025-11-12T08:55:48Z [ERROR] TraceId=fe12be userName: "lin.chen" userRole=analyst message="Unhandled exception from userReport task"
 2025-11-12T08:57:03Z [INFO] actor=userAudit userToken=user-0091 status=processed notes="All checks passed"
 2025-11-12T08:59:44Z [DEBUG] context.user: system user(system) flag=false metadata="audit trail for userId: zk-778"
-2025-11-12T09:02:11Z [INFO] service=payments userAlias=user_445 command=refund amount=45.30 status=queued
-2025-11-12T09:05:36Z [ERROR] tenantId=alpha userAccount:user.mendez@corp.local reason="Exceeded limit for userBKP"
-2025-11-12T09:07:58Z [WARN] module=auth detail="user-name: 'gary.holt' initiated password reset" ip=192.168.2.15
-2025-11-12T09:09:42Z [INFO] job=syncUsers processed=125 failures=0 operator=userSupport
-2025-11-12T09:12:03Z [DEBUG] trace=userFlow step=validate input="userId: yx-120" output=success
-2025-11-12T09:14:26Z [INFO] queue=notifications recipient=user-queue-02 payload="Welcome user: maria.lopez" result=sent
-2025-11-12T09:16:54Z [WARN] subsystem=reporting context="userSegment=user_beta" detail="user12345 missing attributes"
-2025-11-12T09:19:08Z [ERROR] team=ops userHandle=@user_ops_17 failure="Unable to contact upstream"
-2025-11-12T09:21:45Z [DEBUG] audit.user: "service bot" session=user-session-9987 state=active
-2025-11-12T09:24:32Z [INFO] exec=userBoard memberName=user-Mgr-04 vote=approve notes="Budget increase approved"
-2025-11-12T09:26:18Z [ERROR] pipeline=etl stage=extract operator="user: nina.k" details="Timeout while pulling dataset"
-2025-11-12T09:28:47Z [INFO] task=userSync stats=userCount:450 scheduler=cron(0/5 * * * *)
-2025-11-12T09:30:59Z [WARN] alertId=US-991 source="user-monitor" context="userName: 'dev.user1'" handled=false
-2025-11-12T09:33:21Z [DEBUG] env=staging tag=userLabel-test latency=122ms user-agent="userBot/1.2"
-2025-11-12T09:35:44Z [INFO] approvalFlow step=review approver=user.Approver.12 outcome=granted
-2025-11-12T09:37:58Z [ERROR] microservice=catalog actor=user.runtime-44 payload="userRef:user-7788 missing SKU" retry=false
-2025-11-12T09:40:15Z [WARN] stream=user-events partition=3 offset=99122 data="userId: uu-550 inline warning"
-2025-11-12T09:42:03Z [INFO] module=search query="user profile update" issuedBy=userPortal requestId=7e88ff
-2025-11-12T09:44:49Z [DEBUG] handler=userTracer tags="user_scope=alpha" metrics="user.hit=120"
-2025-11-12T09:47:20Z [INFO] workflow=userOnboarding stage=verify agent=user-check-09 status=complete
+2025-11-13T09:02:11Z [INFO] service=payments userAlias=user_445 command=refund amount=45.30 status=queued
+2025-11-13T09:05:36Z [ERROR] tenantId=alpha userAccount:user.mendez@corp.local reason="Exceeded limit for userBKP"
+2025-11-13T09:07:58Z [WARN] module=auth detail="user-name: 'gary.holt' initiated password reset" ip=192.168.2.15
+2025-11-13T09:09:42Z [INFO] job=syncUsers processed=125 failures=0 operator=userSupport
+2025-11-14T09:12:03Z [DEBUG] trace=userFlow step=validate input="userId: yx-120" output=success
+2025-11-14T09:14:26Z [INFO] queue=notifications recipient=user-queue-02 payload="Welcome user: maria.lopez" result=sent
+2025-11-14T09:16:54Z [WARN] subsystem=reporting context="userSegment=user_beta" detail="user12345 missing attributes"
+2025-11-14T09:19:08Z [ERROR] team=ops userHandle=@user_ops_17 failure="Unable to contact upstream"
+2025-11-14T09:21:45Z [DEBUG] audit.user: "service bot" session=user-session-9987 state=active
+2025-11-15T09:24:32Z [INFO] exec=userBoard memberName=user-Mgr-04 vote=approve notes="Budget increase approved"
+2025-11-15T09:26:18Z [ERROR] pipeline=etl stage=extract operator="user: nina.k" details="Timeout while pulling dataset"
+2025-11-15T09:28:47Z [INFO] task=userSync stats=userCount:450 scheduler=cron(0/5 * * * *)
+2025-11-15T09:30:59Z [WARN] alertId=US-991 source="user-monitor" context="userName: 'dev.user1'" handled=false
+2025-11-16T09:33:21Z [DEBUG] env=staging tag=userLabel-test latency=122ms user-agent="userBot/1.2"
+2025-11-16T09:35:44Z [INFO] approvalFlow step=review approver=user.Approver.12 outcome=granted
+2025-11-16T09:37:58Z [ERROR] microservice=catalog actor=user.runtime-44 payload="userRef:user-7788 missing SKU" retry=false
+2025-11-16T09:40:15Z [WARN] stream=user-events partition=3 offset=99122 data="userId: uu-550 inline warning"
+2025-11-16T09:42:03Z [INFO] module=search query="user profile update" issuedBy=userPortal requestId=7e88ff
+2025-11-16T09:44:49Z [DEBUG] handler=userTracer tags="user_scope=alpha" metrics="user.hit=120"
+2025-11-16T09:47:20Z [INFO] workflow=userOnboarding stage=verify agent=user-check-09 status=complete
